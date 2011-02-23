@@ -2,6 +2,7 @@ class UsersController < ApplicationController
   before_filter :authenticate, :only => [:index, :edit, :update, :destroy]
   before_filter :correct_user, :only => [:edit, :update]
   before_filter :admin_user, 	 :only => :destroy
+  before_filter :logged_user,  :only => [:new, :create]
   
   def index
   	@title = "All users"
@@ -15,21 +16,21 @@ class UsersController < ApplicationController
   
   def new
   	@user = User.new
-  	@title = "Sign up"
-  end
+		@title = "Sign up"
+	end
   
   def create
   	@user = User.new(params[:user])
-  	if @user.save
-  		sign_in @user
-  		flash[:success] = "Welcome to the Sample App!"
-  		redirect_to @user
-  	else
-  		@title = "Sign up"
-  		@user.password.clear
-  		@user.password_confirmation.clear
-  		render 'new'
-  	end
+  		if @user.save
+  			sign_in @user
+  			flash[:success] = "Welcome to the Sample App!"
+  			redirect_to @user
+  		else
+  			@title = "Sign up"
+  			@user.password.clear
+  			@user.password_confirmation.clear
+  			render 'new'
+  		end
   end
   
   def edit
@@ -49,9 +50,14 @@ class UsersController < ApplicationController
   end
   
   def destroy
-  	User.find(params[:id]).destroy
-  	flash[:success] = "User destroyed"
-  	redirect_to users_path
+  	if User.find(params[:id]).admin?
+  		flash[:error] = "You can't delete an admin user"
+  		redirect_to users_path
+  	else
+  		User.find(params[:id]).destroy
+  		flash[:success] = "User destroyed"
+  		redirect_to users_path
+  	end
   end
   
   private
@@ -67,6 +73,10 @@ class UsersController < ApplicationController
   	
   	def admin_user
   		redirect_to(root_path) unless current_user.admin?
+  	end
+  	
+  	def logged_user
+  		redirect_to(root_path) if signed_in?
   	end
   		
 end
